@@ -12,7 +12,7 @@
 		<compileSource.version>1.7</compileSource.version>
 		<maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
 		<junit.version>4.11</junit.version>
-		<elasticsearch.version>1.4.2</elasticsearch.version>
+		<elasticsearch.version>1.6.2</elasticsearch.version>
 	</properties>
 	
 	<dependencies>
