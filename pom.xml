@@ -6,6 +6,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>custom-scripts</module>
+		<module>index-listener-example</module>
 	</modules>
 	
 	<properties>
