@@ -11,16 +11,9 @@
 
 package my.elasticsearch.plugins;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.metadata.MetaDataCreateIndexService;
-import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.inject.Injector;
-import org.elasticsearch.common.inject.Injectors;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.slf4j.Slf4jESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
@@ -29,13 +22,11 @@ import org.elasticsearch.index.engine.Engine.Delete;
 import org.elasticsearch.index.engine.Engine.Index;
 import org.elasticsearch.index.engine.Engine.IndexingOperation;
 import org.elasticsearch.index.indexing.IndexingOperationListener;
-import org.elasticsearch.index.indexing.ShardIndexingService;
 import org.elasticsearch.index.shard.IndexShard;
 import org.elasticsearch.index.shard.ShardId;
-import org.elasticsearch.indices.IndicesLifecycle.Listener;
 import org.elasticsearch.indices.IndicesService;
 
-public class IndexMigrationConfigurationService extends AbstractLifecycleComponent<IndexMigrationConfigurationService>
+public class IndexMigrationConfigurationService extends AbstractIndexLifecycleComponent<IndexMigrationConfigurationService>
 {
   @Inject
   public IndexMigrationConfigurationService(final Settings settings, 
@@ -43,73 +34,32 @@ public class IndexMigrationConfigurationService extends AbstractLifecycleCompone
                                             final MetaDataCreateIndexService metaDataCreateIndexService,
                                             final ClusterService clusterService)
   {
-    super(settings);
+    super(settings, indicesService, MIGRATION_INDEX, true);
     
-    this.indicesService = indicesService;
-    this.indexStartStopListener = getIndexStartStopListener();
     this.metaDataCreateIndexService = metaDataCreateIndexService;
     this.clusterService = clusterService;
   }
   
   @Override
-  protected void doStart() throws ElasticsearchException
+  protected void afterIndexShardStarted(final IndexShard indexShard)
   {
-    LOGGER.error("### doStart...");
+    indexingOperationListener = getIndexingOperationListener();
+    indexShard.indexingService().addListener(indexingOperationListener);
     
-    this.indicesService.indicesLifecycle().addListener(this.indexStartStopListener);
-    
+    LOGGER.error("### Started monitoring migration configuration changes in {}.", MIGRATION_INDEX);        
   }
 
   @Override
-  protected void doStop() throws ElasticsearchException
+  protected void afterIndexShardDeleted(ShardId shardId, Settings indexSettings)
   {
-    LOGGER.error("### doStop...");
-    this.doClose();
-  }
-
-  @Override
-  protected void doClose() throws ElasticsearchException
-  {
-    LOGGER.error("### doClose...");
-    if(this.indexStartStopListener != null)
-    {
-      this.indicesService.indicesLifecycle().removeListener(this.indexStartStopListener);
-      this.indexStartStopListener = null;
-    }    
+    indexingOperationListener = null;
+    
+    // TODO: Ajey - Will the listener be removed since the index is deleted?
+    
+    LOGGER.error("### Stopped monitoring migration configuration changes in {}.", MIGRATION_INDEX);        
   }
   
-  private Listener getIndexStartStopListener()
-  {
-    return new Listener()
-    {
-      @Override
-      public void afterIndexShardStarted(final IndexShard indexShard)
-      {
-        if(!MIGRATION_INDEX.equals(indexShard.shardId().getIndex()))
-           return;
-        
-        indexingOperationListener = getIndexingOperationListener(indexShard.indexingService());
-        indexShard.indexingService().addListener(indexingOperationListener);
-        
-        LOGGER.error("### Started monitoring migration configuration changes in {}.", MIGRATION_INDEX);        
-      }
-      
-      @Override
-      public void afterIndexShardDeleted(final ShardId shardId, final Settings indexSettings)
-      {
-        if(!MIGRATION_INDEX.equals(shardId.getIndex()))
-          return;
-        
-        indexingOperationListener = null;
-        
-        // TODO: Ajey - Will the listener be removed since the index is deleted?
-        
-        LOGGER.error("### Stopped monitoring migration configuration changes in {}.", MIGRATION_INDEX);        
-      }
-    };
-  }
-
-  private IndexingOperationListener getIndexingOperationListener(final ShardIndexingService indexingService)
+  private IndexingOperationListener getIndexingOperationListener()
   {
     // TODO: Ajey - We should listen only on primary shard. Documents added to backup shard may also trigger the create/index events.
     return new IndexingOperationListener()
@@ -174,12 +124,10 @@ public class IndexMigrationConfigurationService extends AbstractLifecycleCompone
   // Private
   private final MetaDataCreateIndexService metaDataCreateIndexService;
   private final ClusterService clusterService;
-  private final IndicesService indicesService;
-  private Listener indexStartStopListener;
   private IndexingOperationListener indexingOperationListener;
-  private Map<String, IndexSynchronizer> indexSynchronizers = new HashMap<>();
+  //private Map<String, IndexSynchronizer> indexSynchronizers = new HashMap<>();
   
-  private final Object SYNC_BLOCK = new Object();
+  //private final Object SYNC_BLOCK = new Object();
   
   private final static String MIGRATION_INDEX = "es_migration";
     
