@@ -33,6 +33,7 @@ import org.elasticsearch.index.shard.IndexShard;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.indices.IndicesLifecycle.Listener;
 import org.elasticsearch.indices.IndicesService;
+import org.elasticsearch.script.ScriptService;
   
 public class IndexLifecycleListenerService extends AbstractLifecycleComponent<IndexLifecycleListenerService>
 {
@@ -40,7 +41,8 @@ public class IndexLifecycleListenerService extends AbstractLifecycleComponent<In
   public IndexLifecycleListenerService(final Settings settings,
                                        final IndicesService indicesService, 
                                        final IndexMigrationConfigurationService configurationService,
-                                       final Client client)
+                                       final Client client,
+                                       final ScriptService scriptService)
   {    
     super(settings);
     
@@ -48,6 +50,7 @@ public class IndexLifecycleListenerService extends AbstractLifecycleComponent<In
     this.listener = getListener();
     this.configurationService = configurationService;
     this.client = client;
+    this.scriptService = scriptService;
     
     LOGGER.error("### Created...Client [{}]", this.client);
   }
@@ -71,7 +74,7 @@ public class IndexLifecycleListenerService extends AbstractLifecycleComponent<In
         LOGGER.error("### Need to synchronize documents from index [{}] with index [{}]", indexName, targetIndexName);
         synchronized (SYNC_BLOCK)
         {
-          indexSynchronizers.put(indexShard.shardId(), new IndexSynchronizer(indexShard.indexingService(), targetIndexName, client));
+          indexSynchronizers.put(indexShard.shardId(), new IndexSynchronizer(indexShard.indexingService(), targetIndexName, client, scriptService));
         }
 
         super.afterIndexShardCreated(indexShard);
@@ -132,6 +135,7 @@ public class IndexLifecycleListenerService extends AbstractLifecycleComponent<In
   private final Client client;
   private final IndicesService indicesService;
   private final IndexMigrationConfigurationService configurationService;
+  private final ScriptService scriptService;
   private final Map<ShardId, IndexSynchronizer> indexSynchronizers = new HashMap<>();// TODO: Ajey - needs to be in sync block
   private final Object SYNC_BLOCK = new Object();
   private final static ESLogger LOGGER = Slf4jESLoggerFactory.getLogger("IndexLifecycleListener");
