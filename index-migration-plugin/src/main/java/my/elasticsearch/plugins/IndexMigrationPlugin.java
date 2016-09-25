@@ -56,7 +56,7 @@ public class IndexMigrationPlugin extends AbstractPlugin
   {
     final List<Class<? extends LifecycleComponent>> services = new ArrayList<>();
     
-    services.add(IndexLifecycleListenerService.class);
+    services.add(IndexMigrationConfigurationService.class);
     
     return services;
   }

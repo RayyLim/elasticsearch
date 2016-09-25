@@ -16,12 +16,9 @@ import java.util.Map;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.collect.Maps;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.slf4j.Slf4jESLoggerFactory;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentHelper;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.engine.Engine.Create;
 import org.elasticsearch.index.engine.Engine.Index;
@@ -77,7 +74,7 @@ public class IndexSynchronizer implements AutoCloseable
 
       @SuppressWarnings("unchecked")
       private void syncDocument(final IndexingOperation sourceRequest)
-      {
+      {        
         // These scripts are compiled already. We cannot cache this since we will be setting the variable as source on each run.
         final ExecutableScript executableScript = scriptService.executable("groovy", "source_index_transform_script", ScriptType.FILE, ScriptContext.Standard.UPDATE, null);
         

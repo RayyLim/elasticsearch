@@ -64,7 +64,7 @@ public class IndexLifecycleListenerService extends AbstractLifecycleComponent<In
       {
         final String indexName = indexShard.shardId().getIndex();
         
-        final String targetIndexName = configurationService.targetIndexToBeSynchronizedWith(indexName);
+        final String targetIndexName = null;//configurationService.targetIndexToBeSynchronizedWith(indexName);
         if(targetIndexName == null)
         {
           super.afterIndexShardCreated(indexShard);

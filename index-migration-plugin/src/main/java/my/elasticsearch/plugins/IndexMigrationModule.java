@@ -18,7 +18,7 @@ public class IndexMigrationModule extends AbstractModule
   @Override
   protected void configure()
   {
-    bind(IndexMigrationConfigurationService.class).asEagerSingleton();
+    //bind(IndexMigrationConfigurationService.class).asEagerSingleton();
   }
 }
 
