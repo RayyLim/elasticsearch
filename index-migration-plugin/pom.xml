@@ -5,7 +5,5 @@
     <artifactId>elasticsearch</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>my.elasticsearch</groupId>
   <artifactId>index-migration-plugin</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
 </project>
