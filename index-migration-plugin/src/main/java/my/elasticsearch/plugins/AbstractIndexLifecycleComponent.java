@@ -14,6 +14,7 @@ package my.elasticsearch.plugins;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.shard.IndexShard;
 import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.indices.IndicesService;
@@ -23,14 +24,12 @@ public abstract class AbstractIndexLifecycleComponent<T> extends AbstractLifecyc
 {
   protected AbstractIndexLifecycleComponent(final Settings settings,
                                             final IndicesService indicesService,
-                                            final String indexName, 
-                                            final boolean exactMatchIndexName) 
+                                            final String indexName) 
   {
     super(settings);
     
     this.indicesService = indicesService;
     this.indexName = indexName;
-    this.exactMatchIndexName = exactMatchIndexName;
   }
   
   @Override
@@ -40,24 +39,32 @@ public abstract class AbstractIndexLifecycleComponent<T> extends AbstractLifecyc
     
     this.indexStartStopListener = getIndexStartStopListener();
     this.indicesService.indicesLifecycle().addListener(this.indexStartStopListener);
+    
+    // If the index has already been created then we won't get the start notification.
+    // Let's check manually.
+    final IndexService indexService = this.indicesService.indexService(indexName);
+    if(indexService == null)
+       return;
+    
+    AbstractIndexLifecycleComponent.this.afterIndexShardStarted(indexService.shard(0)); // TODO: Ajey - We are considering single share scenario only for now.
   }
   
   @Override
   protected void doStop() throws ElasticsearchException
   {
     logger.error("### doStop...");
-    doClose();
+    if(this.indexStartStopListener != null)
+    {
+      this.indicesService.indicesLifecycle().removeListener(this.indexStartStopListener);
+      this.indexStartStopListener = null;
+      
+      logger.error("### Stopped monitoring start/stop operations for index {}.", this.indexName);
+    }
   }
 
   @Override
   protected void doClose() throws ElasticsearchException
   {
-    logger.error("### doClose...");
-  
-    if(this.indexStartStopListener != null)
-    {
-      this.indicesService.indicesLifecycle().removeListener(this.indexStartStopListener);
-    }
   }
   
   protected Listener getIndexStartStopListener()
@@ -67,7 +74,7 @@ public abstract class AbstractIndexLifecycleComponent<T> extends AbstractLifecyc
       @Override
       public void afterIndexShardStarted(final IndexShard indexShard)
       {
-        if(!isIndexToBeWatched(indexShard.shardId()))
+        if(!isIndexToBeWatched(indexShard.shardId().getIndex()))
            return;
         
         logger.error("### afterIndexShardStarted called for {}", indexShard.shardId());
@@ -78,22 +85,21 @@ public abstract class AbstractIndexLifecycleComponent<T> extends AbstractLifecyc
       @Override
       public void afterIndexShardDeleted(final ShardId shardId, final Settings indexSettings)
       {
-        if(!isIndexToBeWatched(shardId))
+        if(!isIndexToBeWatched(shardId.getIndex()))
            return;
         
         logger.error("### afterIndexShardDeleted called for {}", shardId);
         
         AbstractIndexLifecycleComponent.this.afterIndexShardDeleted(shardId, indexSettings);
       }
-      
-      private boolean isIndexToBeWatched(final ShardId shardId)
-      {
-        if(exactMatchIndexName && indexName.equals(shardId.getIndex())) // TODO: Ajey - Should consider only primary shard.
-           return true;  
-       
-        return (!exactMatchIndexName && indexName.startsWith(shardId.getIndex()));
-      }
     };
+  }
+
+  protected boolean isIndexToBeWatched(final String sourceIndexName)
+  {
+    //logger.error("### isIndexToBeWatched({}, {})", this.indexName, sourceIndexName);
+    
+    return this.indexName.equals(sourceIndexName); // TODO: Ajey - Should consider only primary shard.
   }
 
   protected abstract void afterIndexShardStarted(final IndexShard indexShard);
@@ -102,6 +108,5 @@ public abstract class AbstractIndexLifecycleComponent<T> extends AbstractLifecyc
   protected Listener indexStartStopListener;
   protected final IndicesService indicesService;
   protected final String indexName;
-  protected final boolean exactMatchIndexName;
 }
 
