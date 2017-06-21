@@ -1,2 +1,3 @@
 # elasticsearch
-Elasticsearch related modules
+Elasticsearch related modules.
+Blog: http://exploring-elasticsearch.blogspot.in
