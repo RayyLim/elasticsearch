@@ -13,7 +13,6 @@ package my.elasticsearch;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -36,36 +35,32 @@ import org.elasticsearch.index.mapper.internal.UidFieldMapper;
  */
 public class EsIndexReader
 {
-  public EsIndexReader(final String dataDirectoryPathTillClusterName)
+  public EsIndexReader(final String dataDirectoryPath)
   {
-    this.dataDirectoryPathTillClusterName = dataDirectoryPathTillClusterName;
+    this.dataDirectoryPath = dataDirectoryPath;
   }
 
   /**
    * Read the documents from the given index.
-   * @param indexName The index from which the documents are to be enumerated.
    * @param bIncludeVersion True if document version needs to be retrieved. If False then version is set to -1. Retrieving document version is an additional lookup so should be avoided if not required.
    * @return The {@link Documents} instance having details like total documents, deleted documents etc. and is also an {@link Iterable}&lt;EsDocument>.
    */
-  public Documents read(final String indexName, final boolean bIncludeVersion)
+  public Documents read(final boolean bIncludeVersion)
   {    
-    return new Documents(indexName, bIncludeVersion);
+    return new Documents(bIncludeVersion);
   }
   
   public class Documents implements Iterable<EsDocument>
   {
-    private Documents(final String indexName, final boolean bIncludeVersion)
+    private Documents(final boolean bIncludeVersion)
     {
       try
       {
         this.bIncludeVersion = bIncludeVersion;
 
-        // TODO: Ajey - Reading only the first shard (0) on first node (0).
-        final String indexFile = Paths.get(dataDirectoryPathTillClusterName, "/nodes/0/indices/", indexName, "/0/index").toString();
+        LOGGER.info("Reading index files under [{}]", dataDirectoryPath);
         
-        LOGGER.info("Reading index files under [{}]", indexFile);
-        
-        this.indexReader = DirectoryReader.open(FSDirectory.open(new File(indexFile)));
+        this.indexReader = DirectoryReader.open(FSDirectory.open(new File(dataDirectoryPath)));
       }
       catch (Exception e)
       {
@@ -160,7 +155,7 @@ public class EsIndexReader
   }
 
   // Private members
-  private final String dataDirectoryPathTillClusterName;
+  private final String dataDirectoryPath;
   private final static ESLogger LOGGER = ESLoggerFactory.getLogger("EsIndexReader");
 }
 
