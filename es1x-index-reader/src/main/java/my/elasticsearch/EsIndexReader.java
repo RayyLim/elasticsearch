@@ -124,10 +124,9 @@ public class EsIndexReader
         {
           try
           {
-            if(this.liveDocs == null)
-               return this.nDocIndex < indexReader.maxDoc();
-            
-            for(; this.nDocIndex < indexReader.maxDoc() && !this.liveDocs.get(this.nDocIndex); ++this.nDocIndex)
+            // Set the pointer till the next non-deleted document. Ideally this should happen in next() but we can also have the very first document being deleted
+            // so need to advance the index till the next live document here also.
+            for(; this.nDocIndex < indexReader.maxDoc() && this.liveDocs != null && !this.liveDocs.get(this.nDocIndex); ++this.nDocIndex)
             {
               //LOGGER.info("Ignoring deleted document: {}", this.nDocIndex);
             }
