@@ -85,6 +85,8 @@ class Populator(object):
 	    return '{}:{:>02}:{:>05.2f}'.format(hours, minutes, seconds)
 
 if __name__ == '__main__':
-    populator = Populator('localhost:7200', 'endpoints', 'host', 'sample_host_data.json', 10000, 1000)
+    #populator = Populator('localhost:7200', 'endpoints', 'host', 'sample_host_data.json', 10000, 1000)
+    # 1 M records
+    populator = Populator('localhost:7200', 'endpoints_huge', 'host', 'sample_host_data.json', 1000000, 1000)
     populator.populate()
 

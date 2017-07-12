@@ -65,10 +65,21 @@ public class EsIndexReaderTest
   @Test
   public void index_with_deletes_Ignores_Deleted_Documents()
   {
-    final Documents documents = getDocuments("index_with_deletes", false);
-    assertThat(documents.totalDocs()).as("Total documents").isEqualTo(10000);
-    assertThat(documents.deletedDocs()).as("Deleted documents").isEqualTo(2000);
-    assertThat(documents.maxDocId()).as("Max. document id").isEqualTo(12000);
+    validate_documents("index_with_deletes", 10000, 2000);
+  }
+
+  @Test
+  public void index_with_1M_documents_Returns_1M_Documents()
+  {
+    validate_documents("index_with_1M_documents", 1000000, 0);
+  }
+  
+  private void validate_documents(final String index, final int nTotalExpectedDocuments, final int nTotalDeletedDocuments)
+  {
+    final Documents documents = getDocuments(index, false);
+    assertThat(documents.totalDocs()).as("Total documents").isEqualTo(nTotalExpectedDocuments);
+    assertThat(documents.deletedDocs()).as("Deleted documents").isEqualTo(nTotalDeletedDocuments);
+    assertThat(documents.maxDocId()).as("Max. document id").isEqualTo(nTotalExpectedDocuments + nTotalDeletedDocuments);
     
     int nCount = 0;
     for (EsDocument esDocument : documents)
@@ -77,7 +88,7 @@ public class EsIndexReaderTest
       LOGGER.debug("{}: {}", nCount, esDocument);
     }
     
-    assertThat(nCount).as("Total documents enumerated").isEqualTo(10000); // If we don't ignore deleted docs then this count will be totalDocs + deletedDocs i.e. 12000
+    assertThat(nCount).as("Total documents enumerated").isEqualTo(nTotalExpectedDocuments); // If we don't ignore deleted docs then this count will be totalDocs + deletedDocs i.e. 12000
   }
   
   private void validate_small_data_index_with_single_type(final boolean nIncludeVersion)
