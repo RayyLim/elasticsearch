@@ -60,6 +60,26 @@ public class EsIndexReaderTest
     validate_small_data_index_with_two_types(true);
   }
   
+  // To generate data for such test use the populate_documents.py script to generate data.
+  // Run the script multiple times for update (delete + add) and immediately stop elasticsearch when the script completes.
+  @Test
+  public void index_with_deletes_Ignores_Deleted_Documents()
+  {
+    final Documents documents = getDocuments("index_with_deletes", false);
+    assertThat(documents.totalDocs()).as("Total documents").isEqualTo(10000);
+    assertThat(documents.deletedDocs()).as("Deleted documents").isEqualTo(2000);
+    assertThat(documents.maxDocId()).as("Max. document id").isEqualTo(12000);
+    
+    int nCount = 0;
+    for (EsDocument esDocument : documents)
+    {
+      ++nCount;
+      LOGGER.debug("{}: {}", nCount, esDocument);
+    }
+    
+    assertThat(nCount).as("Total documents enumerated").isEqualTo(10000); // If we don't ignore deleted docs then this count will be totalDocs + deletedDocs i.e. 12000
+  }
+  
   private void validate_small_data_index_with_single_type(final boolean nIncludeVersion)
   {
     final Documents documents = getDocuments("small_data_index_with_single_type", nIncludeVersion);
@@ -73,7 +93,7 @@ public class EsIndexReaderTest
     for (EsDocument esDocument : documents)
     {
       ++nCount;
-      LOGGER.info("{}: {}", nCount, esDocument);
+      LOGGER.debug("{}: {}", nCount, esDocument);
       
       assertThat(esDocument).as("Expected document").isIn(expectedEsDocuments);
     }
@@ -95,7 +115,7 @@ public class EsIndexReaderTest
     for (EsDocument esDocument : documents)
     {
       ++nCount;
-      LOGGER.info("{}: {}", nCount, esDocument);
+      LOGGER.debug("{}: {}", nCount, esDocument);
       
       assertThat(esDocument).as("Expected document").isIn(expectedEsDocuments);
     }
@@ -190,7 +210,7 @@ public class EsIndexReaderTest
       throw new RuntimeException(e); // TODO: Ajey - Throw custom exception !!!
     }
   }
-  
+
   private final static ESLogger LOGGER = ESLoggerFactory.getLogger("EsIndexReaderTest");
 }
 

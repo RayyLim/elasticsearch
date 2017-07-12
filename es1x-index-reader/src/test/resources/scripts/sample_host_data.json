@@ -1,0 +1,5 @@
+{
+	"hostname": "host-#NUMERIC_INDEX_01#",
+	"ipaddress": "10.11.22.#NUMERIC_INDEX_01#",
+	"domain": "myDomain"
+}
