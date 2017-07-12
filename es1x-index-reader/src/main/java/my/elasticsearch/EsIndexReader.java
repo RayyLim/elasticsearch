@@ -14,6 +14,8 @@ package my.elasticsearch;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -92,6 +94,9 @@ public class EsIndexReader
         @Override
         public EsDocument next()
         {
+          if(!this.hasNext())
+             throw new NoSuchElementException();
+          
           try
           {
             final UidAndSourceFieldsVisitor fieldsVisitor = new UidAndSourceFieldsVisitor();
@@ -103,6 +108,8 @@ public class EsIndexReader
             {
               document.setVersion(Versions.loadVersion(indexReader, new Term(UidFieldMapper.NAME, fieldsVisitor.uid().toBytesRef())));
             }
+            
+            ++this.nDocIndex;
             
             return document;
           }
@@ -117,13 +124,12 @@ public class EsIndexReader
         {
           try
           {
-            ++this.nDocIndex;
-            
             if(this.liveDocs == null)
                return this.nDocIndex < indexReader.maxDoc();
             
             for(; this.nDocIndex < indexReader.maxDoc() && !this.liveDocs.get(this.nDocIndex); ++this.nDocIndex)
-            {            
+            {
+              //LOGGER.info("Ignoring deleted document: {}", this.nDocIndex);
             }
             
             return this.nDocIndex < indexReader.maxDoc();
@@ -145,7 +151,7 @@ public class EsIndexReader
         }
         
         private final Bits liveDocs = MultiFields.getLiveDocs(indexReader);
-        private int nDocIndex = -1;
+        private int nDocIndex = 0;
       };
     }
 
